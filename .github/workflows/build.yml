@@ -1,0 +1,69 @@
+name: Build ESP Programmers
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-esp8266:
+    name: Compile ESP8266 Programmer Binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP8266 Core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp8266:esp8266
+
+      - name: Compile ESP8266 Programmer
+        run: |
+          arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --export-binaries esp8266_programmer
+          ls -la esp8266_programmer/build/esp8266.esp8266.nodemcuv2/
+
+      - name: Upload ESP8266 Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp8266-programmer-bin
+          path: esp8266_programmer/build/esp8266.esp8266.nodemcuv2/*.bin
+          if-no-files-found: error
+
+  build-esp32:
+    name: Compile ESP32 Programmer Binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP32 Core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Compile ESP32 Programmer
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 --export-binaries esp32_programmer
+          ls -la esp32_programmer/build/esp32.esp32.esp32/
+
+      - name: Upload ESP32 Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32-programmer-bin
+          path: esp32_programmer/build/esp32.esp32.esp32/*.bin
+          if-no-files-found: error
